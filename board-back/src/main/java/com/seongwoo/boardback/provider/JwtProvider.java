@@ -3,21 +3,28 @@ package com.seongwoo.boardback.provider;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 @Component
 public class JwtProvider {
-    private String secretKey = "S3cr3tK3y";
+    // application.properties에서 불러오기
+    @Value("${secret-key}")
+    private String secretKey;
 
     public String create(String email) {
         Date expiredDate = Date.from(Instant.now().plus(1, ChronoUnit.HOURS));
+        Key key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
 
         String jwt = Jwts.builder()
-                .signWith(SignatureAlgorithm.ES256, secretKey)
+                .signWith(key, SignatureAlgorithm.ES256)
                 .setSubject(email).setIssuedAt(new Date()).setExpiration(expiredDate)
                 .compact();
 
@@ -26,10 +33,14 @@ public class JwtProvider {
 
     public String validate(String jwt) {
         Claims claims = null;
+        Key key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
 
         try {
-            claims = Jwts.parser().setSigningKey(secretKey)
-                    .parseClaimsJws(jwt).getBody();
+            claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(jwt)
+                    .getBody();
         } catch (Exception exception) {
             exception.printStackTrace();
             return null;

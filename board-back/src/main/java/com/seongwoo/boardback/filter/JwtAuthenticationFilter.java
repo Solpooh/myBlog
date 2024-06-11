@@ -25,22 +25,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String token = parseBearerToken(request);
-
         try {
+            String token = parseBearerToken(request);
             if (token == null) {
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            String email = jwtProvider.validate(token);
-            if (email == null) {
+            String userId = jwtProvider.validate(token);
+            if (userId == null) {
                 filterChain.doFilter(request, response);
                 return;
             }
 
             AbstractAuthenticationToken authenticationToken =
-                    new UsernamePasswordAuthenticationToken(email, null, AuthorityUtils.NO_AUTHORITIES);
+                    new UsernamePasswordAuthenticationToken(userId, null, AuthorityUtils.NO_AUTHORITIES);
             // 웹인증 세부정보 구축
             authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
